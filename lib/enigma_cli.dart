@@ -134,7 +134,8 @@ class EncryptFileCommand extends Command<String> {
     final Uint8List iv = enigma.generateRandomIV();
 
     final Stopwatch stopwatch = Stopwatch()..start();
-    final Uint8List encryptedBytes = enigma.encryptBytes(key: key, iv: iv, data: data);
+    final Uint8List encryptedBytes =
+        await enigma.encryptBytesWithIsolates(key: key, iv: iv, data: data);
 
     final Uint8List ivAndEncrypted = Uint8List(iv.length + encryptedBytes.length);
     ivAndEncrypted
@@ -185,7 +186,8 @@ class DecryptFileCommand extends Command<String> {
     final Uint8List cipher = data.sublist(16);
 
     final Stopwatch stopwatch = Stopwatch()..start();
-    final Uint8List decryptedBytes = enigma.decryptBytes(key: key, iv: iv, cipher: cipher);
+    final Uint8List decryptedBytes =
+        await enigma.decryptBytesWithIsolates(key: key, iv: iv, cipher: cipher);
     await outputFile.writeAsBytes(decryptedBytes);
 
     return 'File decrypted in ${(stopwatch..stop()).elapsedMilliseconds} ms.';

@@ -78,7 +78,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "2a64cc7cce83c07baf154f0d60d58ca8b6687362"
+      resolved-ref: e8d8ecb65e42d15728f5c49eb3f4c4106e2a0319
       url: "https://github.com/carlosmakin/enigma.git"
     source: git
     version: "1.0.0"
