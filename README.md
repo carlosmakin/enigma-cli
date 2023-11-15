@@ -115,11 +115,10 @@ Options:
 
 The tool provides descriptive error messages for any issues with commands or arguments.
 
-## Libraries
+## Dependencies
 
-- `dart:convert` - For encoding and decoding operations.
-- `package:args/command_runner.dart` - For parsing command-line arguments.
-- `package:pointycastle/export.dart` - For cryptographic operations.
+- [`args`](https://pub.dev/packages/args) - For parsing command-line arguments.
+- [`enigma`](https://github.com/carlosmakin/enigma.git) - For simplified cryptographic operations.
 
 ## Contributing
 
