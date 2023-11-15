@@ -2,7 +2,7 @@ name: enigma_cli
 description: A simple command-line interface for encrypting and decrypting data.
 version: 1.0.0
 publish_to: none
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/carlosmakin/enigma-cli.git
 
 environment:
   sdk: ^3.1.5
