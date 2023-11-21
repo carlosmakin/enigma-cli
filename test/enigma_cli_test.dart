@@ -88,7 +88,8 @@ void main() {
       final Uint8List iv = Uint8List.fromList(List<int>.filled(16, 0));
       final String base64Key = base64.encode(key);
 
-      final String encryptedData = enigma.encryptText(key: key, iv: iv, text: 'plaintext');
+      final String encryptedData =
+          enigma.encryptTextWithEmbeddedIV(key: key, iv: iv, text: 'plaintext');
       final String? decryptedText = await runner.run(
         <String>['decrypt-text', '-i', encryptedData, '-k', base64Key],
       );
