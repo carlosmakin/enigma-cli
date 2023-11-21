@@ -71,7 +71,7 @@ class EncryptTextCommand extends Command<String> {
   String get description => 'Encrypt text using a base64 AES key.';
 
   @override
-  String run() => enigma.encryptText(
+  String run() => enigma.encryptTextWithEmbeddedIV(
         key: base64.decode(argResults!['key']),
         iv: enigma.generateRandomIV(),
         text: argResults!['input'],
@@ -92,9 +92,9 @@ class DecryptTextCommand extends Command<String> {
   String get description => 'Decrypt text using a base64 AES key.';
 
   @override
-  String run() => enigma.decryptText(
+  String run() => enigma.decryptTextWithEmbeddedIV(
         key: base64.decode(argResults!['key']),
-        cipherText: argResults!['input'],
+        text: argResults!['input'],
       );
 }
 
@@ -130,19 +130,12 @@ class EncryptFileCommand extends Command<String> {
       path.join(path.dirname(inputFile.path), '${inputFile.path}.aes${key.length * 8}'),
     );
 
-    final Uint8List data = await inputFile.readAsBytes();
-    final Uint8List iv = enigma.generateRandomIV();
-
     final Stopwatch stopwatch = Stopwatch()..start();
-    final Uint8List encryptedBytes =
-        await enigma.encryptBytesWithIsolates(key: key, iv: iv, data: data);
 
-    final Uint8List ivAndEncrypted = Uint8List(iv.length + encryptedBytes.length);
-    ivAndEncrypted
-      ..setRange(0, iv.length, iv)
-      ..setRange(iv.length, iv.length + encryptedBytes.length, encryptedBytes);
-
-    await outputFile.writeAsBytes(ivAndEncrypted);
+    final Uint8List data = await inputFile.readAsBytes();
+    final Uint8List output = await enigma.encryptBytesWithEmbeddedIVFast(
+        key: key, iv: enigma.generateRandomIV(), data: data);
+    await outputFile.writeAsBytes(output);
 
     return 'File encrypted in ${(stopwatch..stop()).elapsedMilliseconds} ms.';
   }
@@ -181,13 +174,11 @@ class DecryptFileCommand extends Command<String> {
       path.join(path.dirname(inputFile.path), outputFileName),
     );
 
-    final Uint8List data = await inputFile.readAsBytes();
-    final Uint8List iv = data.sublist(0, 16);
-    final Uint8List cipher = data.sublist(16);
-
     final Stopwatch stopwatch = Stopwatch()..start();
+
+    final Uint8List data = await inputFile.readAsBytes();
     final Uint8List decryptedBytes =
-        await enigma.decryptBytesWithIsolates(key: key, iv: iv, cipher: cipher);
+        await enigma.decryptBytesWithEmbeddedIVFast(key: key, data: data);
     await outputFile.writeAsBytes(decryptedBytes);
 
     return 'File decrypted in ${(stopwatch..stop()).elapsedMilliseconds} ms.';
