@@ -17,7 +17,7 @@ void main() {
     test('generates random key', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
         final String? key = await runner.run(
-          <String>['keygen', '-r', '-e', '${strength.numBits}'],
+          <String>['keygen', '-r', '-S', '${strength.numBits}'],
         );
         expect(base64.decode(key!).length, strength.numBytes);
       }
@@ -26,7 +26,7 @@ void main() {
     test('derives key from passphrase without salt', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
         final String? key = await runner.run(
-          <String>['keygen', '-p', 'test', '-e', '${strength.numBits}', '-i', '1'],
+          <String>['keygen', '-p', 'test', '-S', '${strength.numBits}', '-i', '1'],
         );
         expect(base64.decode(key!).length, strength.numBytes);
       }
@@ -35,7 +35,7 @@ void main() {
     test('derives key from passphrase with salt', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
         final String? key = await runner.run(
-          <String>['keygen', '-p', 'test', '-s', 'salt', '-e', '${strength.numBits}', '-i', '1'],
+          <String>['keygen', '-p', 'test', '-s', 'salt', '-S', '${strength.numBits}', '-i', '1'],
         );
         expect(base64.decode(key!).length, strength.numBytes);
       }
@@ -48,7 +48,7 @@ void main() {
 
     test('encrypts plaintext with a given key', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.filled(strength.numBytes, 64));
+        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
         final String? cipherText = await runner.run(
           <String>['encrypt-text', '-i', 'plaintext', '-k', key],
         );
@@ -63,15 +63,16 @@ void main() {
 
     test('decrypts ciphertext with a given key', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final Uint8List key = Uint8List.fromList(List<int>.filled(strength.numBytes, 64));
-        final Uint8List iv = Uint8List.fromList(List<int>.filled(16, 64));
+        final Uint8List key =
+            Uint8List.fromList(List<int>.generate(strength.numBytes, (int i) => i));
+        final Uint8List iv = Uint8List.fromList(List<int>.generate(16, (int i) => i));
         final String base64Key = base64.encode(key);
 
-        final String encryptedData = encryptTextWithEmbeddedIV(key: key, iv: iv, text: 'plaintext');
-        final String? decryptedText = await runner.run(
-          <String>['decrypt-text', '-i', encryptedData, '-k', base64Key],
+        final String cipherText = encryptTextWithEmbeddedIV(key: key, iv: iv, text: 'plaintext');
+        final String? plainText = await runner.run(
+          <String>['decrypt-text', '-i', cipherText, '-k', base64Key],
         );
-        expect(decryptedText, 'plaintext');
+        expect(plainText, 'plaintext');
       }
     });
   });
@@ -82,7 +83,7 @@ void main() {
 
     test('encrypts a file with a given key', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.filled(strength.numBytes, 64));
+        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
         final File inputFile = await File('input.txt').writeAsString('Input file content');
 
         final String? response = await runner.run(
@@ -103,7 +104,7 @@ void main() {
 
     test('decrypts a file with a given key', () async {
       for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.filled(strength.numBytes, 64));
+        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
         final File inputFile = await File('input.txt').writeAsString('Input file content');
 
         String? response = await runner.run(
