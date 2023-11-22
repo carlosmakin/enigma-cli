@@ -8,118 +8,98 @@ import 'package:test/test.dart';
 import 'package:enigma/enigma.dart';
 
 void main() {
-  final CommandRunner<String> runner = CommandRunner<String>(name, description);
+  final CommandRunner<String> runner = CommandRunner<String>(name, description)
+    ..addCommand(KeygenCommand())
+    ..addCommand(EncryptTextCommand())
+    ..addCommand(DecryptTextCommand())
+    ..addCommand(EncryptFileCommand())
+    ..addCommand(DecryptFileCommand());
 
-  group('enigma-cli keygen command', () {
-    final KeygenCommand command = KeygenCommand();
-    runner.addCommand(command);
+  for (final AESKeyStrength strength in AESKeyStrength.values) {
+    final int bitStrength = strength.numBits;
+    final int byteStrength = strength.numBytes;
+    final String base64Key = base64.encode(List<int>.generate(byteStrength, (int i) => i));
 
-    test('generates random key', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String? key = await runner.run(
-          <String>['keygen', '-r', '-S', '${strength.numBits}'],
+    group('enigma-cli keygen command', () {
+      test('generates random $bitStrength-bit key', () async {
+        final String? response = await runner.run(
+          <String>['keygen', '-r', '-S', '$bitStrength'],
         );
-        expect(base64.decode(key!).length, strength.numBytes);
-      }
+        expect(response, isNotNull);
+        expect(base64.decode(response!).length, byteStrength);
+      });
+
+      test('derives $bitStrength-bit key from passphrase with salt', () async {
+        final String? response = await runner.run(
+          <String>['keygen', '-p', 'test', '-s', 'salt', '-S', '$bitStrength', '-i', '1'],
+        );
+        expect(response, isNotNull);
+        expect(base64.decode(response!).length, byteStrength);
+      });
+
+      test('derives $bitStrength-bit key from passphrase without salt', () async {
+        final String? response = await runner.run(
+          <String>['keygen', '-p', 'test', '-S', '$bitStrength', '-i', '1'],
+        );
+        expect(response, isNotNull);
+        expect(base64.decode(response!).length, byteStrength);
+      });
     });
 
-    test('derives key from passphrase without salt', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String? key = await runner.run(
-          <String>['keygen', '-p', 'test', '-S', '${strength.numBits}', '-i', '1'],
+    group('enigma-cli encrypt-text command', () {
+      test('encrypts plaintext with a given $bitStrength-bit key', () async {
+        final String? response = await runner.run(
+          <String>['encrypt-text', '-i', 'plaintext', '-k', base64Key],
         );
-        expect(base64.decode(key!).length, strength.numBytes);
-      }
+        expect(response, isNotNull);
+      });
     });
 
-    test('derives key from passphrase with salt', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String? key = await runner.run(
-          <String>['keygen', '-p', 'test', '-s', 'salt', '-S', '${strength.numBits}', '-i', '1'],
-        );
-        expect(base64.decode(key!).length, strength.numBytes);
-      }
-    });
-  });
-
-  group('enigma-cli encrypt-text command', () {
-    final EncryptTextCommand command = EncryptTextCommand();
-    runner.addCommand(command);
-
-    test('encrypts plaintext with a given key', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
-        final String? cipherText = await runner.run(
-          <String>['encrypt-text', '-i', 'plaintext', '-k', key],
-        );
-        expect(cipherText, isNotNull);
-      }
-    });
-  });
-
-  group('enigma-cli decrypt-text command', () {
-    final DecryptTextCommand command = DecryptTextCommand();
-    runner.addCommand(command);
-
-    test('decrypts ciphertext with a given key', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final Uint8List key =
-            Uint8List.fromList(List<int>.generate(strength.numBytes, (int i) => i));
+    group('enigma-cli decrypt-text command', () {
+      test('decrypts ciphertext with a given $bitStrength-bit key', () async {
+        final Uint8List key = base64.decode(base64Key);
         final Uint8List iv = Uint8List.fromList(List<int>.generate(16, (int i) => i));
-        final String base64Key = base64.encode(key);
 
         final String cipherText = encryptTextWithEmbeddedIV(key: key, iv: iv, text: 'plaintext');
-        final String? plainText = await runner.run(
+        final String? response = await runner.run(
           <String>['decrypt-text', '-i', cipherText, '-k', base64Key],
         );
-        expect(plainText, 'plaintext');
-      }
+        expect(response, 'plaintext');
+      });
     });
-  });
 
-  group('enigma-cli encrypt-file command', () {
-    final EncryptFileCommand encryptCommand = EncryptFileCommand();
-    runner.addCommand(encryptCommand);
-
-    test('encrypts a file with a given key', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
+    group('enigma-cli encrypt-file command', () {
+      test('encrypts file with a given $bitStrength-bit key', () async {
         final File inputFile = await File('input.txt').writeAsString('Input file content');
 
         final String? response = await runner.run(
-          <String>['encrypt-file', '-i', inputFile.path, '-k', key],
+          <String>['encrypt-file', '-i', inputFile.path, '-k', base64Key],
         );
         expect(response, contains('File encrypted'));
-        expect(File('${inputFile.path}.aes${strength.numBits}').existsSync(), isTrue);
+        expect(File('${inputFile.path}.aes$bitStrength').existsSync(), isTrue);
 
         await inputFile.delete();
-        await File('${inputFile.path}.aes${strength.numBits}').delete();
-      }
+        await File('${inputFile.path}.aes$bitStrength').delete();
+      });
     });
-  });
 
-  group('enigma-cli decrypt-file command', () {
-    final DecryptFileCommand decryptCommand = DecryptFileCommand();
-    runner.addCommand(decryptCommand);
-
-    test('decrypts a file with a given key', () async {
-      for (final AESKeyStrength strength in AESKeyStrength.values) {
-        final String key = base64.encode(List<int>.generate(strength.numBytes, (int i) => i));
+    group('enigma-cli decrypt-file command', () {
+      test('decrypts file with a given $bitStrength-bit key', () async {
         final File inputFile = await File('input.txt').writeAsString('Input file content');
 
         String? response = await runner.run(
-          <String>['encrypt-file', '-i', inputFile.path, '-k', key],
+          <String>['encrypt-file', '-i', inputFile.path, '-k', base64Key],
         );
         expect(response, contains('File encrypted'));
 
         await inputFile.delete();
         expect(File('input.txt').existsSync(), isFalse);
 
-        expect(File('${inputFile.path}.aes${strength.numBits}').existsSync(), isTrue);
-        final File outputFile = File('input.txt.aes${strength.numBits}');
+        expect(File('${inputFile.path}.aes$bitStrength').existsSync(), isTrue);
+        final File outputFile = File('input.txt.aes$bitStrength');
 
         response = await runner.run(
-          <String>['decrypt-file', '-i', outputFile.path, '-k', key],
+          <String>['decrypt-file', '-i', outputFile.path, '-k', base64Key],
         );
 
         expect(response, contains('File decrypted'));
@@ -128,7 +108,7 @@ void main() {
 
         await outputFile.delete();
         await File('input.txt').delete();
-      }
+      });
     });
-  });
+  }
 }
