@@ -36,7 +36,7 @@ Options:
 - `--passphrase, -p`: The passphrase seed for key derivation. Mandatory unless `--random` is used.
 - `--salt, -s`: Optional cryptographic salt. This option is ignored if `--random` flag is used.
 - `--iterations, -i`: Number of hash iterations for key derivation. Default is 10000.
-- `--strength, -e`: Encryption strength (key length in bits: 128, 192, or 256). Default is 256.
+- `--strength, -S`: Encryption strength (key length in bits: 128, 192, or 256). Default is 256.
 - `--random, -r`: Generate a random key. If used, passphrase and salt options are ignored.
 
 ### Encrypt Text
