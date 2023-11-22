@@ -17,7 +17,7 @@ class KeygenCommand extends Command<String> {
       ..addOption('iterations', abbr: 'i', defaultsTo: '10000', help: 'Hash iterations.')
       ..addOption(
         'strength',
-        abbr: 'e',
+        abbr: 'S',
         defaultsTo: '256',
         allowed: <String>['128', '192', '256'],
         allowedHelp: <String, String>{
