@@ -177,9 +177,8 @@ class DecryptFileCommand extends Command<String> {
     final Stopwatch stopwatch = Stopwatch()..start();
 
     final Uint8List data = await inputFile.readAsBytes();
-    final Uint8List decryptedBytes =
-        await enigma.decryptBytesWithEmbeddedIVFast(key: key, data: data);
-    await outputFile.writeAsBytes(decryptedBytes);
+    final Uint8List output = await enigma.decryptBytesWithEmbeddedIVFast(key: key, data: data);
+    await outputFile.writeAsBytes(output);
 
     return 'File decrypted in ${(stopwatch..stop()).elapsedMilliseconds} ms.';
   }
